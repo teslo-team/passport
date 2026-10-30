@@ -1,34 +1,9 @@
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { createHmac } from 'node:crypto'
+
+import { base64UrlDecode, base64UrlEncode, constantTimeEqual } from './utils'
 
 const HMAC_DOMAIN = 'PassportTokenAuth/v1'
 const INTERNAL_SEP = '|'
-
-function base64UrlEncode(buf: Buffer | string) {
-	const s = typeof buf === 'string' ? Buffer.from(buf) : buf
-
-	return s
-		.toString('base64')
-		.replace(/\+/g, '-')
-		.replace(/\//g, '_')
-		.replace(/=+$/, '')
-}
-
-function base64UrlDecode(str: string) {
-	str = str.replace(/-/g, '+').replace(/_/g, '/')
-
-	while (str.length % 4) str += '='
-
-	return Buffer.from(str, 'base64').toString()
-}
-
-function constantTimeEqual(a: string, b: string) {
-	const bufA = Buffer.from(a)
-	const bufB = Buffer.from(b)
-
-	if (bufA.length !== bufB.length) return false
-
-	return timingSafeEqual(bufA, bufB)
-}
 
 function now() {
 	return Math.floor(Date.now() / 1000)
