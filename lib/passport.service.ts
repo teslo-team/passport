@@ -1,54 +1,68 @@
+import { Injectable } from '@nestjs/common'
 import { createHmac } from 'node:crypto'
 
 import { base64UrlDecode, base64UrlEncode, constantTimeEqual } from './utils'
 
-const HMAC_DOMAIN = 'PassportTokenAuth/v1'
-const INTERNAL_SEP = '|'
+@Injectable()
+export class PassportService {
+	private readonly SECRET_KEY: string
 
-function now() {
-	return Math.floor(Date.now() / 1000)
-}
+	private static readonly HMAC_DOMAIN = 'PassportTokenAuth/v1'
+	private static readonly INTERNAL_SEP = '|'
 
-function serialize(user: string, iat: string, exp: string) {
-	return [HMAC_DOMAIN, user, iat, exp].join(INTERNAL_SEP)
-}
+	public constructor() {
+		this.SECRET_KEY = '123456'
+	}
 
-function computeHmac(secretKey: string, data: string) {
-	return createHmac('sha256', secretKey).update(data).digest('hex')
-}
+	public generate(userId: string, ttl: number) {
+		const isssuedAt = this.now()
+		const expiresAt = isssuedAt + ttl
 
-function generateToken(secretKey: string, userId: string, ttl: number) {
-	const isssuedAt = now()
-	const expiresAt = isssuedAt + ttl
+		const userPart = base64UrlEncode(userId)
+		const iatPart = base64UrlEncode(String(isssuedAt))
+		const expPart = base64UrlEncode(String(expiresAt))
 
-	const userPart = base64UrlEncode(userId)
-	const iatPart = base64UrlEncode(String(isssuedAt))
-	const expPart = base64UrlEncode(String(expiresAt))
+		const serialized = this.serialize(userPart, iatPart, expPart)
+		const mac = this.computeHmac(this.SECRET_KEY, serialized)
 
-	const serialized = serialize(userPart, iatPart, expPart)
-	const mac = computeHmac(secretKey, serialized)
+		return `${userPart}.${iatPart}.${expPart}.${mac}`
+	}
 
-	return `${userPart}.${iatPart}.${expPart}.${mac}`
-}
+	public verify(token: string) {
+		const parts = token.split('.')
 
-function verifyToken(secretKey: string, token: string) {
-	const parts = token.split('.')
+		if (parts.length !== 4)
+			return { valid: false, reason: 'Invalid format' }
 
-	if (parts.length !== 4) return { valid: false, reason: 'Invalid format' }
+		const [userPart, iatPart, expPart, mac] = parts
 
-	const [userPart, iatPart, expPart, mac] = parts
+		const serialized = this.serialize(userPart, iatPart, expPart)
 
-	const serialized = serialize(userPart, iatPart, expPart)
+		const expextedMac = this.computeHmac(this.SECRET_KEY, serialized)
 
-	const expextedMac = computeHmac(secretKey, serialized)
+		if (!constantTimeEqual(expextedMac, mac))
+			return { valid: false, reason: 'Invalid signature' }
 
-	if (!constantTimeEqual(expextedMac, mac))
-		return { valid: false, reason: 'Invalid signature' }
+		const expNumber = Number(base64UrlDecode(expPart))
 
-	const expNumber = Number(base64UrlDecode(expPart))
+		if (!Number.isFinite(expNumber))
+			return { valid: false, reason: 'Error' }
+		if (this.now() > expNumber) return { valid: false, reason: 'Expired' }
 
-	if (!Number.isFinite(expNumber)) return { valid: false, reason: 'Error' }
-	if (now() > expNumber) return { valid: false, reason: 'Expired' }
+		return { valid: true, userId: base64UrlDecode(userPart) }
+	}
 
-	return { valid: true, userId: base64UrlDecode(userPart) }
+	private now() {
+		return Math.floor(Date.now() / 1000)
+	}
+
+	private serialize(user: string, iat: string, exp: string) {
+		return [PassportService.HMAC_DOMAIN, user, iat, exp].join(
+			PassportService.INTERNAL_SEP
+		)
+	}
+
+	private computeHmac(secretKey: string, data: string) {
+		return createHmac('sha256', secretKey).update(data).digest('hex')
+	}
 }
