@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
 import { createHmac } from 'node:crypto'
 
+import { PASSPORT_OPTIONS } from './constants'
+import { PassportOptions } from './interfaces'
 import { base64UrlDecode, base64UrlEncode, constantTimeEqual } from './utils'
 
 @Injectable()
@@ -10,8 +12,10 @@ export class PassportService {
 	private static readonly HMAC_DOMAIN = 'PassportTokenAuth/v1'
 	private static readonly INTERNAL_SEP = '|'
 
-	public constructor() {
-		this.SECRET_KEY = '123456'
+	public constructor(
+		@Inject(PASSPORT_OPTIONS) private readonly options: PassportOptions
+	) {
+		this.SECRET_KEY = options.secretKey
 	}
 
 	public generate(userId: string, ttl: number) {
