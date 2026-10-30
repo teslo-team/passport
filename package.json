@@ -1,23 +1,31 @@
 {
-  "name": "passport",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "type": "commonjs",
-  "devDependencies": {
-    "@teslo-team/core": "^1.0.3",
-    "@types/node": "^26.6.5",
-    "prettier": "^3.9.10",
-    "typescript": "^7.0.2"
-  },
-  "dependencies": {
-    "@nestjs/common": "^12.3.2",
-    "@nestjs/core": "^12.3.2",
-    "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
-  }
+	"name": "@teslo-team/passport",
+	"version": "1.0.0",
+	"description": "Lightweight TesloCinema authentication library",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"format": "prettier --write \"lib/**/*.ts\""
+	},
+	"keywords": [],
+	"type": "commonjs",
+	"devDependencies": {
+		"@teslo-team/core": "^1.0.3",
+		"@types/node": "^26.6.5",
+		"prettier": "^3.9.10",
+		"typescript": "^7.0.2"
+	},
+	"dependencies": {
+		"@nestjs/common": "^12.3.2",
+		"@nestjs/core": "^12.3.2",
+		"reflect-metadata": "^0.2.2",
+		"rxjs": "^7.8.2"
+	}
 }
